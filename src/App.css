@@ -1,0 +1,292 @@
+/* =========================================
+   1. BASES & STRUCTURE (CORRIGÉ)
+   ========================================= */
+:root {
+  /* ... tes couleurs restent les mêmes ... */
+  --primary-blue: #2563eb;
+  --text-dark: #111827;
+  --text-medium: #374151;
+  --text-light: #6b7280;
+  --bg-app: #f3f4f6;
+  --bg-card: #ffffff;
+  --border-color: #d1d5db;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  /* On laisse la hauteur automatique pour permettre le scroll */
+  min-height: 100vh;
+  background-color: var(--bg-app);
+  color: var(--text-dark);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  
+  /* Important pour le tactile */
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden; /* Évite le scroll horizontal inutile */
+}
+
+#root {
+  display: flex;
+  flex-direction: column; /* On empile verticalement */
+  align-items: center;    /* On centre HORIZONTALEMENT */
+  justify-content: flex-start; /* IMPORTANT : On commence TOUT EN HAUT */
+  width: 100%;
+  min-height: 100vh;
+}
+
+.container {
+  width: 100%;
+  max-width: 600px; /* Largeur max pour l'esthétique */
+  background-color: var(--bg-card);
+  min-height: 100vh; /* Prend au moins toute la hauteur */
+  
+  /* PADDING INTELLIGENT */
+  padding: 20px; /* Marge interne standard */
+  
+  /* 1. On prévoit la place pour la barre de navigation en bas */
+  padding-bottom: 100px; 
+  
+  /* 2. FIX IPAD : On respecte la barre de statut (encoche/heure) */
+  padding-top: max(20px, env(safe-area-inset-top)); 
+  
+  box-sizing: border-box;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+/* ... Le reste du CSS (h1, h2, .card, etc.) reste identique ... */
+
+/* =========================================
+   2. COMPOSANTS UI
+   ========================================= */
+
+/* Les Cartes (conteneurs blancs) */
+.card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+  border: 1px solid var(--border-color);
+  color: var(--text-dark); /* On force le texte sombre dedans */
+}
+
+/* Champs de saisie */
+.input-field {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-dark); /* Texte bien noir quand on tape */
+  border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+}
+.input-field::placeholder {
+  color: var(--text-light); /* Placeholder gris, mais lisible */
+}
+
+/* Boutons principaux (Bleus) */
+.btn {
+  width: 100%;
+  background-color: var(--primary-blue);
+  color: white !important; /* Texte BLANC sur fond BLEU (force) */
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn:active { transform: scale(0.98); }
+.btn:disabled { background-color: var(--text-light); cursor: not-allowed; }
+
+/* Labels des formulaires */
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  color: var(--text-medium); /* Gris foncé */
+  font-weight: 700; /* Bien gras */
+}
+
+/* =========================================
+   3. SÉLECTEURS TACTILES (Chips & Grille)
+   ========================================= */
+
+/* Sélecteur de Classe (Chips) */
+.class-selector {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 5px;
+  scrollbar-width: none;
+}
+.class-selector::-webkit-scrollbar { display: none; }
+
+.class-chip {
+  background-color: #e5e7eb; /* Gris un peu plus foncé qu'avant */
+  border: 1px solid var(--border-color);
+  color: var(--text-dark);   /* Texte NOIR sur fond GRIS */
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.class-chip.active {
+  background-color: var(--primary-blue);
+  color: white; /* Texte BLANC sur fond BLEU */
+  border-color: var(--primary-blue);
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.4);
+}
+
+/* Grille des Élèves */
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+  gap: 12px;
+  max-height: 45vh;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.student-card {
+  background-color: var(--bg-card); /* Fond BLANC */
+  border: 2px solid var(--border-color); /* Bordure GRISE visible */
+  padding: 15px 10px;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.student-card strong { 
+  display: block;
+  font-size: 1rem;
+  color: var(--text-dark); /* Nom en NOIR */
+  font-weight: 800;
+}
+.student-card small { 
+  color: var(--text-medium); /* Prénom en GRIS FONCÉ */
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.student-card.selected {
+  background-color: #eff6ff;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 2px var(--primary-blue); /* Double bordure bleue */
+}
+.student-card.selected strong { color: var(--primary-blue); }
+.student-card.selected small { color: var(--primary-blue); }
+
+/* =========================================
+   4. AUTRES ÉLÉMENTS DU FORMULAIRE
+   ========================================= */
+
+/* Ligne des dates */
+.date-row { display: flex; gap: 15px; margin-bottom: 20px; }
+
+/* Gros boutons de type (Inapte/Partiel) */
+.type-selector { display: flex; gap: 15px; margin-bottom: 20px; }
+
+.type-btn {
+  flex: 1;
+  padding: 15px;
+  border: 3px solid var(--border-color); /* Bordure épaisse */
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 800;
+  cursor: pointer;
+  background: var(--bg-card);
+  color: var(--text-medium); /* Texte gris foncé par défaut */
+}
+
+.type-btn.active-red {
+  background-color: #fef2f2; border-color: #dc2626; color: #dc2626;
+}
+.type-btn.active-orange {
+  background-color: #fff7ed; border-color: #ea580c; color: #ea580c;
+}
+
+/* Zone d'upload */
+.upload-zone {
+  display: block;
+  border: 3px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-medium); /* Texte foncé */
+  font-weight: 600;
+  background-color: #f9fafb;
+  margin-bottom: 25px;
+}
+.upload-zone.has-file {
+  border-style: solid; border-color: #16a34a; background-color: #f0fdf4; color: #15803d;
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Ajustement pour très petits écrans */
+@media (max-width: 380px) {
+  .student-grid { grid-template-columns: repeat(2, 1fr); }
+  .date-row { flex-direction: column; gap: 10px; }
+}
+
+/* --- STEPPER (Sélecteur de durée) CORRIGÉ --- */
+.stepper-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f3f4f6;
+  border-radius: 12px;
+  padding: 5px;
+  border: 3px solid var(--border-color); /* Bordure plus épaisse pour le contraste */
+  margin-top: 10px;
+}
+
+.stepper-btn {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.1s;
+  /* On enlève la couleur de texte ici, on la gère sur le SVG direct */
+}
+
+/* C'EST ICI QUE ÇA SE PASSE : On force la couleur des icônes */
+.stepper-btn svg {
+  stroke: var(--primary-blue); /* Les icônes sont BLEUES par défaut */
+  transition: stroke 0.1s;
+}
+
+/* QUAND ON CLIQUE */
+.stepper-btn:active {
+  background-color: var(--primary-blue);
+  border-color: var(--primary-blue);
+}
+
+.stepper-btn:active svg {
+  stroke: white; /* L'icône devient BLANCHE quand le fond passe au bleu */
+}
+
+.stepper-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  text-align: center;
+  flex: 1;
+}

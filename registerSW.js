@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/dispense_eps/sw.js', { scope: '/dispense_eps/' })})}

@@ -121,7 +121,7 @@ function App() {
             <PrivacyPanel />
             
             <div style={{height: '40px'}}></div>
-            <p style={{textAlign: 'center', color: '#ccc', fontSize: '0.7rem'}}>v1.6 — Données locales uniquement</p>
+            <p style={{textAlign: 'center', color: '#ccc', fontSize: '0.7rem'}}>v1.7 — Dispenses stockées sur l’appareil</p>
           </div>
         )}
 

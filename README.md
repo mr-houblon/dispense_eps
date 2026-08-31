@@ -3,8 +3,11 @@
 Application de gestion des dispenses de sport (EPS), conçue pour être utilisée
 au bord du terrain, sur téléphone, sans connexion.
 
-**Toutes les données restent sur l'appareil.** Aucun serveur, aucun compte,
-aucun envoi sur Internet.
+**Les dispenses et les justificatifs ne quittent jamais l'appareil.** Aucun
+serveur, aucun compte, aucune donnée de santé envoyée sur Internet.
+
+Seule la liste des élèves (noms et classes) peut être lue depuis une feuille
+Google Sheets, si vous activez cette option.
 
 ## Installation sur le téléphone
 
@@ -81,6 +84,11 @@ Les dispenses contiennent des données de santé de mineurs.
   automatiquement.
 - En cas d'oubli du code PIN, il n'existe pas de récupération : il faut
   réinstaller l'application et restaurer une sauvegarde.
+- Si la synchronisation Google Sheets est utilisée, la feuille doit être
+  partagée par lien : les noms et classes s'y trouvent donc derrière une URL
+  publique quoique indevinable. Aucune donnée de santé n'y figure. Pour
+  éviter cette exposition, gardez la feuille restreinte et utilisez l'import
+  par fichier CSV.
 
 ## Déploiement
 

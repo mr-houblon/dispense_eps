@@ -45,9 +45,16 @@ export const PrivacyPanel = () => {
       <h3 style={{ marginTop: 0 }}>🛡️ Confidentialité</h3>
 
       <p style={{ fontSize: '0.85rem', color: '#4b5563', lineHeight: 1.5 }}>
-        Toutes les données (élèves, dispenses, justificatifs) sont stockées
-        <strong> uniquement sur cet appareil</strong>. Rien n'est envoyé sur
-        Internet, aucun compte n'est requis, aucun serveur n'est utilisé.
+        Les <strong>dispenses et les justificatifs</strong> sont stockés
+        uniquement sur cet appareil. Ils ne sont jamais envoyés sur Internet,
+        aucun compte n'est requis, aucun serveur n'est utilisé.
+      </p>
+
+      <p style={{ fontSize: '0.85rem', color: '#4b5563', lineHeight: 1.5 }}>
+        Seule exception : si vous utilisez la synchronisation Google Sheets,
+        la <strong>liste des élèves</strong> (noms et classes) est lue depuis
+        votre feuille, qui doit être partagée par lien. Les données de santé
+        n'y figurent pas.
       </p>
 
       <p style={{ fontSize: '0.85rem', color: '#4b5563', lineHeight: 1.5 }}>

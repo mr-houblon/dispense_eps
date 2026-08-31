@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Minus, Plus } from 'lucide-react'; // Icônes pour le stepper
+import { compressImage, formatSize } from '../utils/image';
 
 export const ExemptionForm = () => {
   // --- DONNÉES ---
@@ -21,7 +22,6 @@ export const ExemptionForm = () => {
   
   // NOUVEAU : Gestion par Durée
   const [duration, setDuration] = useState<number>(1);
-  const [endDate, setEndDate] = useState(today); // Calculé automatiquement
   
   const [type, setType] = useState<'full' | 'partial'>('full');
   const [sport, setSport] = useState('');
@@ -29,32 +29,44 @@ export const ExemptionForm = () => {
   // Fichier & Prévisualisation
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Blob réellement enregistré (image compressée, ou fichier original si PDF)
+  const [compressed, setCompressed] = useState<Blob | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   // --- LOGIQUE ---
-  const filteredStudents = allStudents?.filter(s => s.classe === selectedClass) || [];
-  // Tri alphabétique des élèves
-  filteredStudents.sort((a, b) => a.lastName.localeCompare(b.lastName));
+  // Tri alphabétique des élèves. On copie avant de trier pour ne pas muter
+  // le tableau renvoyé par useLiveQuery.
+  const filteredStudents = [...(allStudents?.filter(s => s.classe === selectedClass) || [])]
+    .sort((a, b) => a.lastName.localeCompare(b.lastName));
 
-  // CALCUL AUTOMATIQUE DE LA DATE DE FIN
-  useEffect(() => {
-    if (startDate) {
-      const start = new Date(startDate);
-      // On ajoute (durée - 1) car si durée = 1 jour, début = fin
-      start.setDate(start.getDate() + (duration - 1));
-      setEndDate(start.toISOString().split('T')[0]);
-    }
-  }, [startDate, duration]);
+  // CALCUL AUTOMATIQUE DE LA DATE DE FIN.
+  // Dérivée de startDate + duration : pas besoin d'un état séparé.
+  const endDate = useMemo(() => {
+    if (!startDate) return today;
+    const start = new Date(startDate);
+    // On ajoute (durée - 1) car si durée = 1 jour, début = fin
+    start.setDate(start.getDate() + (duration - 1));
+    return start.toISOString().split('T')[0];
+  }, [startDate, duration, today]);
 
   // Gestion du fichier (Image ou PDF)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
-    if (selected) {
-      setFile(selected);
-      if (selected.type.startsWith('image/')) {
-        setPreviewUrl(URL.createObjectURL(selected));
-      } else {
-        setPreviewUrl(null);
-      }
+    if (!selected) return;
+
+    setFile(selected);
+    setIsCompressing(true);
+
+    // On compresse les images avant stockage : une photo de téléphone
+    // pèse plusieurs Mo et rendrait la sauvegarde JSON inexploitable.
+    const blob = await compressImage(selected);
+    setCompressed(blob);
+    setIsCompressing(false);
+
+    if (selected.type.startsWith('image/')) {
+      setPreviewUrl(URL.createObjectURL(blob));
+    } else {
+      setPreviewUrl(null);
     }
   };
 
@@ -69,7 +81,7 @@ export const ExemptionForm = () => {
         endDate, // On enregistre la date calculée
         type,
         sport: type === 'partial' ? sport : undefined,
-        photo: file || undefined,
+        photo: compressed || file || undefined,
         createdAt: new Date()
       });
       alert(`✅ Dispense de ${duration} jour(s) enregistrée !`);
@@ -77,6 +89,7 @@ export const ExemptionForm = () => {
       // Reset intelligent
       setSelectedStudentId(null);
       setFile(null);
+      setCompressed(null);
       setPreviewUrl(null);
       setSport('');
       setType('full');
@@ -257,17 +270,28 @@ export const ExemptionForm = () => {
                   ) : (
                     <span style={{fontSize:'2rem'}}>📄</span>
                   )}
-                  <div style={{flex: 1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textAlign:'left'}}>
-                    <strong>{file.name}</strong>
+                  <div style={{flex: 1, overflow:'hidden', textAlign:'left'}}>
+                    <strong style={{display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                      {file.name}
+                    </strong>
+                    <small style={{color:'#6b7280'}}>
+                      {isCompressing
+                        ? 'Optimisation…'
+                        : compressed && compressed.size < file.size
+                          ? `${formatSize(file.size)} → ${formatSize(compressed.size)} (optimisé)`
+                          : formatSize(file.size)}
+                    </small>
                   </div>
-                  <span style={{color: '#16a34a', fontSize:'1.2rem', fontWeight: 'bold'}}>✓</span>
+                  <span style={{color: '#16a34a', fontSize:'1.2rem', fontWeight: 'bold'}}>
+                    {isCompressing ? '⏳' : '✓'}
+                  </span>
                 </div>
               )}
             </label>
 
             {/* BOUTON VALIDATION */}
-            <button type="submit" className="btn validate-btn">
-              Valider la dispense
+            <button type="submit" className="btn validate-btn" disabled={isCompressing}>
+              {isCompressing ? 'Optimisation du justificatif…' : 'Valider la dispense'}
             </button>
           </div>
         )}

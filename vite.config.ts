@@ -8,13 +8,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'EPS Tracker',
         short_name: 'EPS',
         description: 'Gestion des dispenses EPS',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        theme_color: '#2563eb',
+        background_color: '#f3f4f6',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
@@ -29,9 +28,22 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png'
+          },
+          {
+            // Version "maskable" : permet a Android d'integrer l'icone
+            // a la forme du lanceur au lieu de l'afficher dans un carre blanc.
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
+      },
+      workbox: {
+        // Les justificatifs peuvent etre volumineux : on releve la limite
+        // de mise en cache par defaut (2 Mo) pour le bundle applicatif.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
       }
-    }) 
-  ], // <--- C'est ici qu'il manquait la fermeture du tableau plugins
+    })
+  ],
 })

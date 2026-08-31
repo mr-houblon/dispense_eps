@@ -3,6 +3,13 @@ import Papa from 'papaparse';
 import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 
+/** Une ligne du CSV. Les en-têtes acceptés varient (Nom/Name, Prenom/Prénom...). */
+interface CsvRow {
+  Nom?: string; Name?: string;
+  Prenom?: string; 'Prénom'?: string; FirstName?: string;
+  Classe?: string; Class?: string;
+}
+
 export const StudentImporter = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const studentCount = useLiveQuery(() => db.students.count());
@@ -33,10 +40,10 @@ export const StudentImporter = () => {
 
     setIsProcessing(true);
 
-    Papa.parse(file, {
+    Papa.parse<CsvRow>(file, {
       header: true,
       skipEmptyLines: true,
-      complete: async (results: any) => {
+      complete: async (results) => {
         const rows = results.data;
         let added = 0;
         let updated = 0;
@@ -45,7 +52,7 @@ export const StudentImporter = () => {
           for (const row of rows) {
             // On gère les différentes orthographes possibles des colonnes
             const nom = row.Nom || row.Name;
-            const prenom = row.Prenom || row.Prénom || row.FirstName;
+            const prenom = row.Prenom || row['Prénom'] || row.FirstName;
             const classe = row.Classe || row.Class;
 
             if (nom && prenom && classe) {

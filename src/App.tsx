@@ -1,5 +1,5 @@
 import { PinSettings } from './components/PinSettings';
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { db } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
 
@@ -14,6 +14,7 @@ import { ExemptionList } from './components/ExemptionList';
 import { StudentImporter } from './components/StudentImporter';
 import { ReportGenerator } from './components/ReportGenerator';
 import { BackupManager } from './components/BackupManager';
+import { PrivacyPanel } from './components/PrivacyPanel';
 
 import './App.css';
 
@@ -22,25 +23,31 @@ function App() {
   
   // État de navigation (Par défaut sur 'home')
   const [activeTab, setActiveTab] = useState('home');
-  const [needsBackup, setNeedsBackup] = useState(false);
 
-  // Vérification de la sauvegarde (Logic 7 jours)
-  useEffect(() => {
-    if (studentCount && studentCount > 0) {
-      const lastBackup = localStorage.getItem('eps-last-backup');
-      if (!lastBackup) {
-        setNeedsBackup(true);
-      } else {
-        const diffDays = Math.ceil(Math.abs(new Date().getTime() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24)); 
-        setNeedsBackup(diffDays > 7);
-      }
-    }
+  // Vérification de la sauvegarde (Logic 7 jours).
+  // Simple dérivation : inutile de passer par un état + effet.
+  // Le recalcul au changement d'onglet est volontaire : il relit
+  // localStorage après un retour de l'écran Réglages, où l'utilisateur
+  // vient peut-être d'effectuer sa sauvegarde.
+  const needsBackup = useMemo(() => {
+    if (activeTab === 'admin') return false; // déjà sur l'écran concerné
+    if (!studentCount || studentCount === 0) return false;
+    const lastBackup = localStorage.getItem('eps-last-backup');
+    if (!lastBackup) return true;
+    const diffDays = Math.ceil(
+      Math.abs(new Date().getTime() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return diffDays > 7;
   }, [studentCount, activeTab]);
 
-  // Si aucun élève, on force l'écran Admin (Import)
-  useEffect(() => {
+  // Si aucun élève, on bascule sur l'écran Admin (Import).
+  // Ajustement d'état pendant le rendu : le motif recommandé par React
+  // pour réagir au changement d'une valeur externe sans effet.
+  const [prevCount, setPrevCount] = useState(studentCount);
+  if (studentCount !== prevCount) {
+    setPrevCount(studentCount);
     if (studentCount === 0) setActiveTab('admin');
-  }, [studentCount]);
+  }
 
   return (
     <AuthGuard>
@@ -53,7 +60,7 @@ function App() {
         </header>
 
         {/* --- ALERTE SAUVEGARDE --- */}
-        {needsBackup && activeTab !== 'admin' && (
+        {needsBackup && (
           <div 
             onClick={() => setActiveTab('admin')}
             style={{
@@ -108,9 +115,13 @@ function App() {
             
             {/* 4. Rapports */}
             <ReportGenerator />
+            <div style={{height: '20px'}}></div>
+
+            {/* 5. Confidentialité & conservation des données */}
+            <PrivacyPanel />
             
             <div style={{height: '40px'}}></div>
-            <p style={{textAlign: 'center', color: '#ccc', fontSize: '0.7rem'}}>v1.5 - Secure</p>
+            <p style={{textAlign: 'center', color: '#ccc', fontSize: '0.7rem'}}>v1.6 — Données locales uniquement</p>
           </div>
         )}
 

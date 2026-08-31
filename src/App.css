@@ -290,3 +290,170 @@ html, body {
   text-align: center;
   flex: 1;
 }
+/* =========================================
+   9. JUSTIFICATIFS (visualiseur)
+   ========================================= */
+
+.justificatif-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eff6ff;
+  color: var(--primary-blue);
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.justificatif-btn:active { transform: scale(0.97); }
+
+/* Version compacte utilisée sur le tableau de bord */
+.justificatif-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  color: var(--primary-blue);
+  border: 1px solid #bfdbfe;
+  width: 28px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 2000; /* au-dessus de la barre de navigation (z-index 1000) */
+  animation: fadeIn 0.15s;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+
+.modal-body {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+}
+
+.modal-pdf {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  border-radius: 8px;
+}
+
+.modal-download {
+  display: block;
+  text-align: center;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--primary-blue);
+  font-weight: bold;
+}
+
+/* =========================================
+   10. FILTRES DE L'HISTORIQUE
+   ========================================= */
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filter-row::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-medium);
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filter-chip.active {
+  background: var(--primary-blue);
+  border-color: var(--primary-blue);
+  color: white;
+}
+
+/* =========================================
+   11. PAVÉ NUMÉRIQUE (écran de verrouillage)
+   =========================================
+   Classe dédiée : .btn impose "color: white !important", ce qui rendait
+   les chiffres invisibles (blanc sur blanc) quand on tentait de surcharger
+   la couleur en style inline. */
+
+.keypad-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: var(--bg-card);
+  color: var(--text-dark);
+  border: 2px solid #e5e7eb;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.keypad-btn:active { transform: scale(0.96); background-color: #f3f4f6; }
+
+.keypad-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.keypad-btn.delete {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+  font-size: 1.2rem;
+}
+
+.keypad-btn.delete:active { background-color: #fecaca; }

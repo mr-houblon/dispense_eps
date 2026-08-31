@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
+import { JustificatifViewer } from './JustificatifViewer';
 
 export const Dashboard = () => {
   const today = new Date().toISOString().split('T')[0];
@@ -88,6 +89,18 @@ export const Dashboard = () => {
                 }}>
                   {ex.type === 'full' ? 'INAPTE TOTAL' : `PARTIEL (${ex.sport})`}
                 </span>
+
+                {/* Justificatif : consultable d'un clic, et repérable
+                    d'un coup d'œil quand il manque. */}
+                <div style={{marginTop: '8px'}}>
+                  {ex.photo ? (
+                    <JustificatifViewer photo={ex.photo} compact />
+                  ) : (
+                    <span style={{fontSize: '0.7rem', color: '#f59e0b', fontWeight: 'bold'}}>
+                      ⚠️ Sans justificatif
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* DROITE : COMPTE À REBOURS */}

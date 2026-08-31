@@ -66,6 +66,25 @@ Les dispenses contiennent des données de santé de mineurs.
 - En cas d'oubli du code PIN, il n'existe pas de récupération : il faut
   réinstaller l'application et restaurer une sauvegarde.
 
+## Déploiement
+
+Le site est hébergé sur Netlify, qui construit automatiquement chaque envoi
+sur `main`. La configuration est dans [`netlify.toml`](netlify.toml) :
+build `npm run build`, publication de `dist/`.
+
+L'HTTPS fourni par Netlify n'est pas un confort mais une nécessité : le mode
+hors ligne (service worker) et le hachage du code PIN (`crypto.subtle`)
+refusent tous deux de fonctionner sans contexte sécurisé.
+
+### ⚠️ L'adresse ne se change pas impunément
+
+Les données sont cloisonnées **par adresse**. Changer l'URL du site
+(sous-domaine Netlify renommé, passage à un nom de domaine personnel) revient
+pour le navigateur à une application neuve : la base repart vide.
+
+Avant tout changement d'adresse : **exportez une sauvegarde**, puis
+restaurez-la sur la nouvelle adresse.
+
 ## Développement
 
 ```bash

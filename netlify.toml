@@ -1,0 +1,47 @@
+# Déploiement Netlify — EPS Tracker
+#
+# L'application est entièrement statique : Netlify se contente de servir
+# le contenu de dist/. Aucune variable d'environnement, aucun secret.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # On fige la version de Node pour que le build en ligne soit
+  # identique au build local.
+  NODE_VERSION = "22"
+
+# Le service worker ne doit jamais être servi depuis le cache du
+# navigateur : sinon une ancienne version de l'application resterait
+# épinglée sur le téléphone malgré un nouveau déploiement.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Les fichiers de dist/assets/ portent un hash dans leur nom :
+# ils peuvent être mis en cache indéfiniment.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# L'application ne contient pas de données côté serveur, mais autant
+# ne pas se laisser embarquer dans une iframe tierce.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

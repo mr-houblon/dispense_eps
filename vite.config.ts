@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // L'enregistrement est fait à la main dans src/pwa.ts, pour pouvoir
+      // déclencher une vérification de mise à jour au retour au premier plan.
+      injectRegister: null,
       manifest: {
         name: 'EPS Tracker',
         short_name: 'EPS',

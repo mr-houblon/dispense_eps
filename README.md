@@ -100,6 +100,25 @@ L'HTTPS fourni par Netlify n'est pas un confort mais une nécessité : le mode
 hors ligne (service worker) et le hachage du code PIN (`crypto.subtle`)
 refusent tous deux de fonctionner sans contexte sécurisé.
 
+### Vérifier qu'une mise à jour est bien arrivée
+
+Le numéro de version s'affiche en bas de l'onglet Réglages. C'est le moyen
+le plus simple de savoir si l'appareil tourne sur la dernière version ou sur
+une copie en cache.
+
+Une PWA installée peut conserver longtemps son ancienne version : elle n'est
+presque jamais rechargée, donc le navigateur ne redemande pas le service
+worker. [`src/pwa.ts`](src/pwa.ts) force une vérification à chaque retour au
+premier plan, et toutes les heures si l'application reste ouverte.
+
+Si une version reste malgré tout bloquée, **fermez complètement
+l'application** (retirez-la des applications récentes) et rouvrez-la, deux
+fois si nécessaire.
+
+⚠️ **N'effacez jamais « les données du site »** pour forcer une mise à jour :
+cela supprimerait IndexedDB, donc les élèves, les dispenses et les
+justificatifs. Exportez une sauvegarde d'abord.
+
 ### ⚠️ L'adresse ne se change pas impunément
 
 Les données sont cloisonnées **par adresse**. Changer l'URL du site

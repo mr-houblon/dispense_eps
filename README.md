@@ -23,7 +23,7 @@ application native.
 
 ### Importer la liste des élèves
 
-Format CSV attendu, avec la ligne d'en-tête :
+Deux sources possibles, avec le même format de colonnes :
 
 ```csv
 Nom,Prenom,Classe
@@ -31,9 +31,25 @@ Dupont,Jean,3ème A
 Martin,Sophie,4ème B
 ```
 
-Un modèle est téléchargeable depuis l'onglet Réglages. Le ré-import est
-non destructif : les élèves déjà connus voient simplement leur classe mise à
-jour (utile en début d'année).
+**Google Sheets** (recommandé) : collez le lien de la feuille dans Réglages,
+puis « Synchroniser maintenant ». La feuille reste la référence : vous la
+tenez à jour sur ordinateur, et vous resynchronisez depuis le téléphone.
+
+La feuille doit être partagée en « Tous ceux qui disposent du lien »
+(lecture) — c'est ce qui permet de la lire sans compte Google ni clé d'API.
+Corollaire à assumer : les noms et classes de vos élèves se trouvent alors
+derrière une URL publique, quoique indevinable. Les dispenses, elles, ne
+quittent jamais l'appareil.
+
+**Fichier CSV** : utile hors connexion, ou si vous préférez garder la feuille
+privée (dans ce cas : Fichier → Télécharger → CSV depuis Sheets, puis import
+dans l'application). Un modèle est téléchargeable depuis Réglages.
+
+Dans les deux cas l'import est **non destructif** : les élèves déjà connus
+voient leur classe mise à jour, les nouveaux sont ajoutés, et personne n'est
+jamais supprimé — leurs dispenses passées les référencent. Les élèves
+présents dans l'application mais absents de la source sont simplement
+signalés dans le bilan d'import.
 
 ## ⚠️ Sauvegardes : à lire absolument
 

@@ -117,15 +117,18 @@ html, body {
    3. SÉLECTEURS TACTILES (Chips & Grille)
    ========================================= */
 
-/* Sélecteur de Classe (Chips) */
-.class-selector {
+/* Sélecteur de Classe.
+   Anciennement une bande à faire défiler horizontalement : introuvable au
+   pouce, et rien n'indiquait qu'il restait des classes hors de l'écran.
+   Toutes les classes tiennent désormais sur plusieurs lignes, visibles d'un
+   seul coup d'oeil. */
+.class-grid {
   display: flex;
-  overflow-x: auto;
-  gap: 12px;
-  padding: 5px;
-  scrollbar-width: none;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 5px 0 0;
+  margin-bottom: 15px;
 }
-.class-selector::-webkit-scrollbar { display: none; }
 
 .class-chip {
   background-color: #e5e7eb; /* Gris un peu plus foncé qu'avant */
@@ -137,6 +140,7 @@ html, body {
   font-size: 1rem;
   white-space: nowrap;
   cursor: pointer;
+  font-family: inherit;
 }
 
 .class-chip.active {
@@ -163,6 +167,17 @@ html, body {
   border-radius: 12px;
   text-align: center;
   cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+}
+
+/* Classe rappelée sous le prénom quand la recherche traverse tous les niveaux */
+.student-card-classe {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-light) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
 }
 
 .student-card strong { 
@@ -457,3 +472,93 @@ html, body {
 }
 
 .keypad-btn.delete:active { background-color: #fecaca; }
+
+/* =========================================
+   11. RECHERCHE D'ÉLÈVE (onglet Nouveau)
+   ========================================= */
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0 12px;
+  background: var(--bg-card);
+  margin-bottom: 12px;
+}
+
+.search-box:focus-within {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.search-box-icon { color: var(--text-light); flex-shrink: 0; }
+
+.search-box-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-dark);
+  font-size: 1.05rem;
+  font-family: inherit;
+  padding: 14px 0;
+}
+
+/* Chrome ajoute sa propre croix, qui ferait doublon avec la nôtre. */
+.search-box-input::-webkit-search-cancel-button { display: none; }
+
+.search-box-clear {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Rappel permanent de l'élève choisi : on remplit ensuite durée, type et
+   justificatif, et il ne faut jamais avoir à remonter pour vérifier
+   sur qui porte la saisie. */
+.picked-student {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #eff6ff;
+  border: 2px solid var(--primary-blue);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.picked-student-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary-blue);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picked-student-classe {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.picked-student-change {
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 2px solid var(--primary-blue);
+  color: var(--primary-blue);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+}

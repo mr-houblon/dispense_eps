@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   fetchSheetCsv, getSavedSheetUrl, saveSheetUrl, SheetError,
 } from '../utils/sheets';
+import { byName, isActive, isArchived, fullName, studentKey } from '../utils/students';
 
 /** Une ligne du CSV. Les en-têtes acceptés varient (Nom/Name, Prenom/Prénom...). */
 interface CsvRow {
@@ -16,26 +17,40 @@ interface CsvRow {
 interface ImportResult {
   added: number;
   updated: number;
+  /** Élèves archivés qui réapparaissent dans la source. */
+  restored: number;
   ignored: number;
-  /** Élèves présents dans l'application mais absents de la source. */
-  missing: number;
+  /** Élèves de l'application absents de la source : retirés des listes. */
+  archived: number;
 }
 
 export const StudentImporter = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [sheetUrl, setSheetUrl] = useState(getSavedSheetUrl());
-  const studentCount = useLiveQuery(() => db.students.count());
+
+  const students = useLiveQuery(() => db.students.toArray());
   const exemptionCount = useLiveQuery(() => db.exemptions.count());
+
+  const activeStudents = (students ?? []).filter(isActive);
+  const archivedStudents = (students ?? []).filter(isArchived).sort(byName);
 
   /* ------------------------------------------------------------------
      Logique d'import commune au fichier CSV et à la feuille Google.
+
+     La source fait autorité : un élève qui n'y figure plus disparaît des
+     écrans de saisie. Il n'est pas supprimé pour autant — ses dispenses
+     passées le référencent par son identifiant, et l'historique doit
+     continuer à afficher son nom. On l'archive.
      ------------------------------------------------------------------ */
 
   const importRows = async (rows: CsvRow[]): Promise<ImportResult> => {
     let added = 0;
     let updated = 0;
+    let restored = 0;
     let ignored = 0;
+    let archived = 0;
     const seen = new Set<string>();
+    const today = new Date().toISOString().split('T')[0];
 
     await db.transaction('rw', db.students, async () => {
       for (const row of rows) {
@@ -49,31 +64,36 @@ export const StudentImporter = () => {
           continue;
         }
 
-        seen.add(`${nom.toLowerCase()}|${prenom.toLowerCase()}`);
+        seen.add(studentKey(nom, prenom));
 
         const existing = await db.students
-          .where({ lastName: nom, firstName: prenom })
+          .where('[lastName+firstName]')
+          .equals([nom, prenom])
           .first();
 
         if (existing) {
-          await db.students.update(existing.id!, { classe });
-          updated++;
+          // archivedAt: undefined supprime la propriété (convention Dexie),
+          // ce qui remet l'élève dans les listes s'il en était sorti.
+          await db.students.update(existing.id!, { classe, archivedAt: undefined });
+          if (isArchived(existing)) restored++;
+          else updated++;
         } else {
           await db.students.add({ lastName: nom, firstName: prenom, classe });
           added++;
         }
       }
+
+      // Archivage de ceux que la source ne mentionne plus.
+      const all = await db.students.toArray();
+      for (const s of all) {
+        if (seen.has(studentKey(s.lastName, s.firstName))) continue;
+        if (isArchived(s)) continue;
+        await db.students.update(s.id!, { archivedAt: today });
+        archived++;
+      }
     });
 
-    // L'import ne supprime jamais personne : un élève retiré de la source
-    // reste dans l'application, car ses dispenses passées le référencent.
-    // On se contente de le signaler.
-    const all = await db.students.toArray();
-    const missing = all.filter(
-      (s) => !seen.has(`${s.lastName.toLowerCase()}|${s.firstName.toLowerCase()}`)
-    ).length;
-
-    return { added, updated, ignored, missing };
+    return { added, updated, restored, ignored, archived };
   };
 
   const reportResult = (source: string, r: ImportResult) => {
@@ -83,12 +103,18 @@ export const StudentImporter = () => {
       `Nouveaux élèves : ${r.added}`,
       `Mis à jour : ${r.updated}`,
     ];
+    if (r.restored > 0) {
+      lignes.push(`Réintégrés : ${r.restored}`);
+    }
     if (r.ignored > 0) {
       lignes.push(`Lignes ignorées (incomplètes) : ${r.ignored}`);
     }
-    if (r.missing > 0) {
-      lignes.push('', `${r.missing} élève(s) de l'application ne figurent pas dans la source.`);
-      lignes.push('Ils ont été conservés : leurs dispenses passées y font référence.');
+    if (r.archived > 0) {
+      lignes.push(
+        '',
+        `${r.archived} élève(s) absent(s) de la source ont été retirés des listes de saisie.`,
+        "Leurs dispenses passées restent consultables dans l'Historique.",
+      );
     }
     alert(lignes.join('\n'));
   };
@@ -109,6 +135,22 @@ export const StudentImporter = () => {
       saveSheetUrl(sheetUrl);
 
       const parsed = Papa.parse<CsvRow>(csv, { header: true, skipEmptyLines: true });
+
+      // Garde-fou : une feuille dont la lecture échoue à moitié (mauvais
+      // onglet, en-têtes renommés) archiverait toute la promotion d'un coup.
+      const usable = parsed.data.filter(
+        (r) => (r.Nom || r.Name) && (r.Prenom || r['Prénom'] || r.FirstName)
+      );
+      if (usable.length === 0) {
+        alert(
+          "La feuille ne contient aucune ligne exploitable.\n\n" +
+          "Vérifiez que la première ligne porte bien les en-têtes " +
+          "Nom, Prenom, Classe, et que le bon onglet est partagé.\n\n" +
+          "Rien n'a été modifié."
+        );
+        return;
+      }
+
       const result = await importRows(parsed.data);
       reportResult('Synchronisation Google Sheets', result);
     } catch (error) {
@@ -153,7 +195,48 @@ export const StudentImporter = () => {
   };
 
   /* ------------------------------------------------------------------
-     3. Modèle et remise à zéro
+     3. Élèves retirés
+     ------------------------------------------------------------------ */
+
+  /**
+   * Suppression définitive des élèves retirés qui n'ont aucune dispense.
+   * Ceux qui en ont une sont conservés : les effacer transformerait leur
+   * historique en « Élève inconnu ».
+   */
+  const handlePurgeArchived = async () => {
+    const removable: number[] = [];
+    let kept = 0;
+
+    for (const s of archivedStudents) {
+      const count = await db.exemptions.where('studentId').equals(s.id!).count();
+      if (count === 0) removable.push(s.id!);
+      else kept++;
+    }
+
+    if (removable.length === 0) {
+      alert(
+        kept > 0
+          ? `Les ${kept} élève(s) retiré(s) ont tous des dispenses enregistrées : ` +
+            "ils sont conservés pour que l'historique reste lisible."
+          : 'Aucun élève à supprimer.'
+      );
+      return;
+    }
+
+    const message = [
+      `Supprimer définitivement ${removable.length} élève(s) retiré(s) sans aucune dispense ?`,
+    ];
+    if (kept > 0) {
+      message.push('', `${kept} autre(s) seront conservés : ils ont des dispenses dans l'historique.`);
+    }
+    if (!confirm(message.join('\n'))) return;
+
+    await db.students.bulkDelete(removable);
+    alert(`${removable.length} élève(s) supprimé(s).`);
+  };
+
+  /* ------------------------------------------------------------------
+     4. Modèle et remise à zéro
      ------------------------------------------------------------------ */
 
   const handleDownloadTemplate = () => {
@@ -195,7 +278,9 @@ export const StudentImporter = () => {
         </label>
         <p style={{ fontSize: '0.8rem', color: '#4b5563', marginTop: 0, marginBottom: '10px' }}>
           Colonnes attendues : <code>Nom, Prenom, Classe</code>. La feuille doit
-          être partagée en « Tous ceux qui disposent du lien ».
+          être partagée en « Tous ceux qui disposent du lien ». Elle fait
+          autorité : les élèves qui n'y figurent plus sortent des listes de
+          saisie.
         </p>
 
         <input
@@ -248,13 +333,47 @@ export const StudentImporter = () => {
         {isProcessing && <p style={{ color: 'blue' }}>Traitement en cours…</p>}
       </div>
 
+      {/* SECTION 3 : ÉLÈVES RETIRÉS */}
+      {archivedStudents.length > 0 && (
+        <div style={{
+          backgroundColor: '#f9fafb', border: '1px solid #e5e7eb',
+          borderRadius: '8px', padding: '12px', marginBottom: '20px'
+        }}>
+          <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>
+            👋 {archivedStudents.length} élève(s) retiré(s) de la liste
+          </label>
+          <p style={{ fontSize: '0.8rem', color: '#4b5563', marginTop: 0 }}>
+            Absents de la source, ils n'apparaissent plus au moment de saisir
+            une dispense, mais restent nommés dans l'Historique.
+          </p>
+
+          <div style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '10px' }}>
+            {archivedStudents.slice(0, 8).map((s) => (
+              <div key={s.id}>{fullName(s)} — {s.classe}</div>
+            ))}
+            {archivedStudents.length > 8 && <div>…et {archivedStudents.length - 8} autres.</div>}
+          </div>
+
+          <button
+            onClick={handlePurgeArchived}
+            style={{
+              fontSize: '0.8rem', background: 'none', border: '1px solid #6b7280',
+              color: '#4b5563', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer'
+            }}
+          >
+            Supprimer ceux qui n'ont aucune dispense
+          </button>
+        </div>
+      )}
+
       <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #eee' }} />
 
-      {/* SECTION 3 : STATS & RESET */}
+      {/* SECTION 4 : STATS & RESET */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: '0.8rem', color: '#666' }}>
           <strong>État actuel :</strong><br />
-          🧑‍🎓 {studentCount || 0} Élèves<br />
+          🧑‍🎓 {activeStudents.length} Élèves
+          {archivedStudents.length > 0 && ` (+ ${archivedStudents.length} retirés)`}<br />
           📄 {exemptionCount || 0} Dispenses
         </div>
 

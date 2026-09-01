@@ -1,9 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import pkg from './package.json'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Le numéro de version vient de package.json : écrit à la main dans
+  // App.tsx, il finissait toujours par mentir sur ce qui tourne réellement.
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   plugins: [
     react(),
     VitePWA({

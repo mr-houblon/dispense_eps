@@ -20,7 +20,7 @@ application native.
 | Onglet | Usage |
 |---|---|
 | **Aujourd'hui** | Qui est dispensé aujourd'hui, et pour combien de temps encore |
-| **Nouveau** | Saisir une dispense : classe → élève → durée → type → justificatif |
+| **Nouveau** | Saisir une dispense : élève → durée → type → justificatif. On trouve l'élève en tapant les premières lettres de son nom (accents facultatifs), ou en choisissant sa classe |
 | **Historique** | Toutes les dispenses, avec filtres et recherche. Permet d'arrêter ou de supprimer une dispense |
 | **Réglages** | Code PIN, sauvegardes, import des élèves, bilan PDF, confidentialité |
 
@@ -48,11 +48,19 @@ quittent jamais l'appareil.
 privée (dans ce cas : Fichier → Télécharger → CSV depuis Sheets, puis import
 dans l'application). Un modèle est téléchargeable depuis Réglages.
 
-Dans les deux cas l'import est **non destructif** : les élèves déjà connus
-voient leur classe mise à jour, les nouveaux sont ajoutés, et personne n'est
-jamais supprimé — leurs dispenses passées les référencent. Les élèves
-présents dans l'application mais absents de la source sont simplement
-signalés dans le bilan d'import.
+Dans les deux cas **la source fait autorité** : les élèves déjà connus voient
+leur classe mise à jour, les nouveaux sont ajoutés, et ceux qui n'y figurent
+plus sont *retirés* — ils disparaissent de l'écran de saisie.
+
+Retiré ne veut pas dire supprimé. Leurs dispenses passées les référencent, et
+l'historique doit continuer à les nommer : ils sont conservés en arrière-plan,
+listés dans Réglages, et un bouton propose d'effacer définitivement ceux qui
+n'ont aucune dispense. Un élève qui réapparaît dans la feuille est
+automatiquement réintégré.
+
+Garde-fou : une feuille dont aucune ligne n'est exploitable (mauvais onglet,
+en-têtes renommés) ne retire personne — la synchronisation s'interrompt avec
+un message.
 
 ## ⚠️ Sauvegardes : à lire absolument
 
@@ -142,6 +150,23 @@ npm run dev
 | `npm run preview` | Prévisualise le build (nécessaire pour tester la PWA) |
 | `npm run lint` | ESLint |
 
+### Écrans de secours
+
+Deux garde-fous encadrent l'application, faute de quoi une défaillance
+d'IndexedDB se traduisait par un écran blanc ou un « Chargement… » sans fin,
+sans le moindre message :
+
+- [`DatabaseGate`](src/components/DatabaseGate.tsx) ouvre la base *avant*
+  d'afficher quoi que ce soit. Un échec (stockage saturé, navigation privée)
+  ou un blocage (l'application ouverte dans une autre fenêtre pendant une
+  migration de schéma) devient un message explicite avec un bouton
+  « Réessayer ».
+- [`ErrorBoundary`](src/components/ErrorBoundary.tsx) rattrape toute erreur de
+  rendu — `useLiveQuery` relance l'erreur d'une requête pendant le rendu — et
+  affiche le message, la version, et surtout le rappel que les données ne sont
+  pas perdues (le réflexe « effacer les données du site » est la seule chose
+  qui les détruirait).
+
 ### Architecture
 
 - **React 19 + TypeScript + Vite**, PWA via `vite-plugin-pwa`.
@@ -151,7 +176,16 @@ npm run dev
 - **Persistance : Dexie (IndexedDB)**, schéma dans [`src/db.ts`](src/db.ts).
   Deux tables, `students` et `exemptions`. Les dates sont des chaînes
   `AAAA-MM-JJ`, ce qui permet de les comparer directement
-  (`endDate >= today`).
+  (`endDate >= today`). Un élève retiré de la source porte un `archivedAt` ;
+  `archivedAt` n'est délibérément **pas** indexé, un index IndexedDB ignorant
+  les enregistrements dont la clé est absente — or « non archivé » est
+  justement représenté par l'absence de valeur. Même raison pour laquelle
+  l'historique lit `db.exemptions.toArray()` puis trie en mémoire plutôt que
+  de parcourir l'index `startDate` : un parcours d'index escamote sans bruit
+  les dispenses à la date manquante ou malformée.
+- **Numéro de version** injecté depuis `package.json` par
+  [`vite.config.ts`](vite.config.ts) (`__APP_VERSION__`) : écrit à la main
+  dans l'interface, il finissait par mentir sur ce qui tourne réellement.
 - **Justificatifs** stockés en `Blob` dans IndexedDB, compressés à 1600 px /
   JPEG 0.7 avant enregistrement (`src/utils/image.ts`) pour que les
   sauvegardes restent exploitables.

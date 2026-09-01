@@ -3,20 +3,23 @@ import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Minus, Plus } from 'lucide-react'; // Icônes pour le stepper
 import { compressImage, formatSize } from '../utils/image';
+import { StudentPicker } from './StudentPicker';
+import { isActive as isStudentActive } from '../utils/students';
 
 export const ExemptionForm = () => {
   // --- DONNÉES ---
-  const allStudents = useLiveQuery(() => db.students.toArray());
-  
-  // Récupération des classes uniques et triées
-  const classes = allStudents 
-    ? [...new Set(allStudents.map(s => s.classe))].sort() 
-    : [];
+  // Seuls les élèves encore présents dans la source : on ne saisit pas une
+  // dispense pour quelqu'un qui a quitté l'établissement.
+  const students = useLiveQuery(() => db.students.filter(isStudentActive).toArray());
 
   // --- ÉTATS ---
-  const [selectedClass, setSelectedClass] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
-  
+  // Incrémenté après chaque enregistrement : sert de clé au sélecteur, qui
+  // repart alors d'une recherche vierge. Un « Changer » ordinaire, lui,
+  // conserve la recherche en cours — on vient souvent de se tromper de
+  // voisin dans la même liste.
+  const [savedCount, setSavedCount] = useState(0);
+
   const today = new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState(today);
   
@@ -34,11 +37,6 @@ export const ExemptionForm = () => {
   const [isCompressing, setIsCompressing] = useState(false);
 
   // --- LOGIQUE ---
-  // Tri alphabétique des élèves. On copie avant de trier pour ne pas muter
-  // le tableau renvoyé par useLiveQuery.
-  const filteredStudents = [...(allStudents?.filter(s => s.classe === selectedClass) || [])]
-    .sort((a, b) => a.lastName.localeCompare(b.lastName));
-
   // CALCUL AUTOMATIQUE DE LA DATE DE FIN.
   // Dérivée de startDate + duration : pas besoin d'un état séparé.
   const endDate = useMemo(() => {
@@ -88,6 +86,7 @@ export const ExemptionForm = () => {
       
       // Reset intelligent
       setSelectedStudentId(null);
+      setSavedCount((n) => n + 1);
       setFile(null);
       setCompressed(null);
       setPreviewUrl(null);
@@ -105,49 +104,15 @@ export const ExemptionForm = () => {
       
       <form onSubmit={handleSubmit}>
         
-        {/* 1. SÉLECTEUR DE CLASSE (Scroll Horizontal) */}
-        <div style={{marginBottom: '20px'}}>
-          <label className="form-label">Classe :</label>
-          <div className="class-selector">
-            {classes.map(c => (
-              <div 
-                key={c} 
-                className={`class-chip ${selectedClass === c ? 'active' : ''}`}
-                onClick={() => { setSelectedClass(c); setSelectedStudentId(null); }}
-              >
-                {c}
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* 1. CHOIX DE L'ÉLÈVE (recherche par nom, ou par classe) */}
+        <StudentPicker
+          key={savedCount}
+          students={students}
+          selectedId={selectedStudentId}
+          onSelect={setSelectedStudentId}
+        />
 
-        {/* 2. GRILLE DES ÉLÈVES (Responsive Grid) */}
-        {selectedClass && (
-          <div style={{marginBottom: '25px', animation: 'fadeIn 0.3s'}}>
-            <label className="form-label">
-              Élève ({filteredStudents.length}) :
-            </label>
-            
-            {filteredStudents.length === 0 ? (
-              <p style={{color:'#999', textAlign:'center', padding:'20px'}}>Aucun élève.</p>
-            ) : (
-              <div className="student-grid">
-                {filteredStudents.map(s => (
-                  <div 
-                    key={s.id}
-                    className={`student-card ${selectedStudentId === s.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedStudentId(s.id!)}
-                  >
-                    <strong>{s.lastName.toUpperCase()}</strong>
-                    <small>{s.firstName}</small>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 3. DÉTAILS (Apparaît si élève choisi) */}
+        {/* 2. DÉTAILS (Apparaît si élève choisi) */}
         {selectedStudentId && (
           <div className="details-section" style={{animation: 'slideUp 0.3s'}}>
             

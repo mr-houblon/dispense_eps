@@ -2,6 +2,8 @@ import { PinSettings } from './components/PinSettings';
 import { useState, useMemo } from 'react';
 import { db } from './db';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { isActive } from './utils/students';
+import { APP_VERSION } from './version';
 
 // Composants
 import { AuthGuard } from './components/AuthGuard';
@@ -19,7 +21,9 @@ import { PrivacyPanel } from './components/PrivacyPanel';
 import './App.css';
 
 function App() {
-  const studentCount = useLiveQuery(() => db.students.count());
+  // Seuls les élèves encore présents dans la source comptent : un fichier
+  // vidé de ses élèves doit ramener l'utilisateur vers l'import.
+  const studentCount = useLiveQuery(() => db.students.filter(isActive).count());
   
   // État de navigation (Par défaut sur 'home')
   const [activeTab, setActiveTab] = useState('home');
@@ -121,7 +125,7 @@ function App() {
             <PrivacyPanel />
             
             <div style={{height: '40px'}}></div>
-            <p style={{textAlign: 'center', color: '#ccc', fontSize: '0.7rem'}}>v1.7.1 — Dispenses stockées sur l’appareil</p>
+            <p style={{textAlign: 'center', color: '#ccc', fontSize: '0.7rem'}}>v{APP_VERSION} — Dispenses stockées sur l’appareil</p>
           </div>
         )}
 
